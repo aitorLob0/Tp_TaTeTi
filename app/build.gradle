@@ -1,0 +1,62 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'com.android.application'
+// TODO-01-INTEGRAR
+apply plugin: 'com.google.gms.google-services'
+// TODO-02-CRASHLYTICS
+apply plugin: 'com.google.firebase.crashlytics'
+
+
+
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.3"
+    defaultConfig {
+        applicationId "ar.com.develup.tateti"
+        minSdkVersion 21
+        targetSdkVersion 30
+        versionCode 2
+        versionName "1.1"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    android {
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_8
+            targetCompatibility JavaVersion.VERSION_1_8
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // TODO-01-INTEGRAR
+    // Agregar dependencias de Firebase en esta seccion
+    implementation platform('com.google.firebase:firebase-bom:30.0.1')
+    //Analytics
+    implementation 'com.google.firebase:firebase-analytics-ktx:18.0.3'
+    //Crashlytics
+    implementation 'com.google.firebase:firebase-crashlytics-ktx'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    //Authentication
+    implementation 'com.google.firebase:firebase-auth-ktx'
+    implementation 'com.google.android.gms:play-services-auth:20.2.0'
+    //Remote Config
+    implementation 'com.google.firebase:firebase-config-ktx'
+    //Realtime Database
+    implementation 'com.google.firebase:firebase-database:19.7.0'
+    //Cloud Messaging
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+}
