@@ -2,15 +2,10 @@ package ar.com.develup.tateti.actividades
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.Gravity.apply
 import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat.apply
 import ar.com.develup.tateti.R
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -27,7 +22,6 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.android.synthetic.main.actividad_inicial.*
-import java.lang.Exception
 
 enum class ProviderType {
     GOOGLE
@@ -36,11 +30,11 @@ enum class ProviderType {
 class ActividadInicial : AppCompatActivity() {
     val crashlytics = Firebase.crashlytics
     private val GOOGLE_SIGN_IN = 100
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
-    private lateinit var auth: FirebaseAuth
+    private lateinit var analytics: FirebaseAnalytics
+    private lateinit var authentication: FirebaseAuth
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        crashButton()
+       //crashButton()
         setContentView(R.layout.actividad_inicial)
         val bundle = Bundle()
         val provider = bundle?.getString("provider")
@@ -49,57 +43,40 @@ class ActividadInicial : AppCompatActivity() {
         prefs.putString("email", email.text.toString())
         prefs.putString("provider", provider)
         prefs.apply()
-
-        firebaseAnalytics = Firebase.analytics
-        auth = Firebase.auth
-
-
-
-        firebaseAnalytics.logEvent("InitInicial", bundle)
-
-        iniciarSesion.setOnClickListener { iniciarSesion() }
-        registrate.setOnClickListener { registrate() }
-        olvideMiContrasena.setOnClickListener { olvideMiContrasena() }
-
-        if (usuarioEstaLogueado()) {
-            // Si el usuario esta logueado, se redirige a la pantalla
-            // de partidas
-            verPartidas()
-            finish()
-        }
+        analytics = Firebase.analytics
+        authentication = Firebase.auth
+        analytics.logEvent("InitInicial", bundle)
+        setListeners()
+        verifyUserLog()
         actualizarRemoteConfig()
-    }
-
-    private fun crashButton() {
-        val crashButton = Button(this)
-        crashButton.text = "Test Crash"
-        crashButton.setOnClickListener {
-            throw RuntimeException("Test Crash") // Force a crash
-        }
-
-        addContentView(
-            crashButton, ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        )
     }
 
     override fun onResume() {
         super.onResume()
 
     }
+    private fun verifyUserLog() {
+        if (usuarioEstaLogueado()) {
+            // Si el usuario esta logueado, se redirige a la pantalla
+            // de partidas
+            verPartidas()
+            finish()
+        }
+    }
 
+    private fun setListeners(){
+        iniciarSesion.setOnClickListener { iniciarSesion() }
+        registrate.setOnClickListener { registrate() }
+        olvideMiContrasena.setOnClickListener { olvideMiContrasena() }
+    }
     private fun usuarioEstaLogueado(): Boolean {
-        // TODO-05-AUTHENTICATION
-        // Validar que currentUser sea != null
-        val user = auth.currentUser
+        //TODO-05-AUTHENTICATION
+        //Validar que currentUser sea != null
         var userLogueado = false
-        if (user != null) {
+        if (authentication.currentUser != null) {
             userLogueado = true
         }
         return userLogueado
-
     }
 
     private fun verPartidas() {
@@ -115,25 +92,22 @@ class ActividadInicial : AppCompatActivity() {
     private fun actualizarRemoteConfig() {
         configurarDefaultsRemoteConfig()
         configurarOlvideMiContrasena()
-
     }
 
     private fun configurarDefaultsRemoteConfig() {
         // TODO-04-REMOTECONFIG
         // Configurar los valores por default para remote config,
         // ya sea por codigo o por XML
-
         val settings = remoteConfigSettings {
             minimumFetchIntervalInSeconds = 3600
             fetchTimeoutInSeconds = 10
         }
         Firebase.remoteConfig.setConfigSettingsAsync(settings)
-        Firebase.remoteConfig.setDefaultsAsync(R.xml.firebase_config_defaults)//agarro el xml
-
+        Firebase.remoteConfig.setDefaultsAsync(R.xml.firebase_config_defaults)
     }
 
     private fun configurarOlvideMiContrasena() {
-        // TODO-04-REMOTECONFIG
+        //TODO-04-REMOTECONFIG
         // Obtener el valor de la configuracion para saber si mostrar
         // o no el boton de olvide mi contraseña
         Firebase.remoteConfig.fetchAndActivate()
@@ -159,7 +133,7 @@ class ActividadInicial : AppCompatActivity() {
             // Para ello, utilizamos sendPasswordResetEmail con el email como parametro
             // Agregar el siguiente fragmento de codigo como CompleteListener, que notifica al usuario
             // el resultado de la operacion
-            auth.sendPasswordResetEmail(email)
+            authentication.sendPasswordResetEmail(email)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         Snackbar.make(rootView, "Email enviado", Snackbar.LENGTH_SHORT).show()
@@ -175,52 +149,46 @@ class ActividadInicial : AppCompatActivity() {
         val email = email.text.toString()
         val password = password.text.toString()
         if (email.isEmpty() || password.isEmpty()) {
-            firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LOGIN) {
-                param("LoginIncorrecto", "Inicio de sesion incorrecto")
+            analytics.logEvent(FirebaseAnalytics.Event.LOGIN) {
+                param("LoginIncorrecto", "Inicio de sesion inválido")
             }
-            Toast.makeText(applicationContext, "Por favor llene los campos", Toast.LENGTH_LONG)
+            Toast.makeText(applicationContext, "Por favor complete los campos", Toast.LENGTH_LONG)
                 .show()
         } else {
-            firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LOGIN) {
-                param("LoginCorrecto", "Inicio de sesion correcto")
+            analytics.logEvent(FirebaseAnalytics.Event.LOGIN) {
+                param("LoginCorrecto", "Inicio de sesion exitoso")
             }
             // TODO-05-AUTHENTICATION
             // hacer signInWithEmailAndPassword con los valores ingresados de email y password
             // Agregar en addOnCompleteListener el campo authenticationListener definido mas abajo
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(authenticationListener)
+            authentication.signInWithEmailAndPassword(email, password).addOnCompleteListener(authenticationListener)
         }
         registrarGoogle.setOnClickListener {
-            val googleConf = GoogleSignInOptions
-                .Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build()
-
+            val googleConf = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail().build()
             val googleClient = GoogleSignIn.getClient(this, googleConf)
             googleClient.signOut()
-
             startActivityForResult(googleClient.signInIntent, GOOGLE_SIGN_IN)
         }
-
     }
 
     private val authenticationListener: OnCompleteListener<AuthResult?> =
         OnCompleteListener<AuthResult?> { task ->
             if (task.isSuccessful) {
-                val user = auth.currentUser
+                val user = authentication.currentUser
                 if (usuarioVerificoEmail(user)) {
                     verPartidas()
                 } else {
                     desloguearse()
                     Snackbar.make(
                         rootView!!,
-                        "Verifica tu email para continuar",
+                        "Verifica email para continuar",
                         Snackbar.LENGTH_SHORT
                     ).show()
                 }
             } else {
                 if (task.exception is FirebaseAuthInvalidUserException) {
-                    Snackbar.make(rootView!!, "El usuario no existe", Snackbar.LENGTH_SHORT).show()
+                    Snackbar.make(rootView!!, "Usuario inexiste", Snackbar.LENGTH_SHORT).show()
                 } else if (task.exception is FirebaseAuthInvalidCredentialsException) {
                     Snackbar.make(rootView!!, "Credenciales inválidas", Snackbar.LENGTH_SHORT)
                         .show()
@@ -235,7 +203,7 @@ class ActividadInicial : AppCompatActivity() {
         if (user!!.isEmailVerified) {
             email = true
         } else {
-            firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SELECT_ITEM) {
+            analytics.logEvent(FirebaseAnalytics.Event.SELECT_ITEM) {
                 user.email?.let { param(FirebaseAnalytics.Param.ITEM_NAME, it) }
             }
         }
@@ -245,7 +213,7 @@ class ActividadInicial : AppCompatActivity() {
     private fun desloguearse() {
         // TODO-05-AUTHENTICATION
         // Hacer signOut de Firebase
-        auth.signOut()
+        authentication.signOut()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -258,10 +226,24 @@ class ActividadInicial : AppCompatActivity() {
                     val credential = GoogleAuthProvider.getCredential(account.idToken, null)
                     FirebaseAuth.getInstance().signInWithCredential(credential)
                 }
-
             }catch (e:ApiException){
-                Snackbar.make(rootView!!, "No existe la cuenta", Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(rootView!!, "Cuenta inexistente", Snackbar.LENGTH_SHORT).show()
             }
         }
     }
+
+    /*private fun crashButton() {
+        val crashButton = Button(this)
+        crashButton.text = "Test Crash"
+        crashButton.setOnClickListener {
+            throw RuntimeException("Test Crash") // Force a crash
+        }
+
+        addContentView(
+            crashButton, ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
+    }*/
 }

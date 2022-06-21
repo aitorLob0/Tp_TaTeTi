@@ -23,18 +23,16 @@ import java.util.*
 class ActividadPartida : AppCompatActivity() {
 
     private var partida: Partida? = null
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
-    private lateinit var auth: FirebaseAuth
+    private lateinit var analytics: FirebaseAnalytics
+    private lateinit var authentication: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.actividad_partida)
-
-        auth = Firebase.auth
-        firebaseAnalytics = Firebase.analytics
+        authentication = Firebase.auth
+        analytics = Firebase.analytics
         if (intent.hasExtra(Constantes.EXTRA_PARTIDA)) {
             partida = intent.getSerializableExtra(Constantes.EXTRA_PARTIDA) as Partida
-
             // Si esta partida creada no tiene oponente, entonces me sumo yo como oponente
             if (partida?.oponente == null) {
                 sumarmeComoOponente()
@@ -91,7 +89,6 @@ class ActividadPartida : AppCompatActivity() {
                 cargarVistasPartidaIniciada()
             }
         }
-
         override fun onCancelled(databaseError: DatabaseError) {
         }
     }
@@ -118,16 +115,14 @@ class ActividadPartida : AppCompatActivity() {
             builder.setMessage(if (partida?.ganador == jugador) "GANASTE!" else "PERDISTE :(")
             try {
                 builder.show()
-            } catch (ignored: Exception) {
-            }
+            } catch (ignored: Exception) {}
         } else if (finalizo()) {
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Partida finalizada")
             builder.setMessage("Es un empate")
             try {
                 builder.show()
-            } catch (ignored: Exception) {
-            }
+            } catch (ignored: Exception) {}
         }
     }
 
@@ -178,12 +173,11 @@ class ActividadPartida : AppCompatActivity() {
         val referenciaPartida = database.child(partida?.id!!)
         // TODO-06-DATABASE Descomentar la siguiente linea una vez obtenidos los dos datos anteriores
         referenciaPartida.child("ganador").setValue(ganador)
-
         analyticGanadorPartida(ganador)
     }
 
     private fun analyticGanadorPartida(ganador: String?) {
-        firebaseAnalytics.logEvent("ganador_partida") {
+        analytics.logEvent("ganador_partida") {
             if (ganador != null) {
                 param("ganador", ganador)
             }
@@ -207,7 +201,7 @@ class ActividadPartida : AppCompatActivity() {
                 actualizarPartida(numeroPosicion)
             }
         } else if (partida?.ganador == null) {
-            Snackbar.make(rootView, "Es el turno de tu oponente", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(rootView, "Turno del oponente", Snackbar.LENGTH_SHORT).show()
         }
     }
 
@@ -245,17 +239,13 @@ class ActividadPartida : AppCompatActivity() {
         referenciaPartida.setValue(partida)
         partida?.id = referenciaPartida.key
         suscribirseACambiosEnLaPartida()
-
         analyticPartidaCreada(jugador, contador)
-
-
     }
 
     private fun analyticPartidaCreada(jugador: String, contador: Double) {
-        firebaseAnalytics.logEvent("partida_creada") {
+        analytics.logEvent("partida_creada") {
             param("jugador", jugador)
             param("cantidadDePartidasCreadas", contador)
-
         }
     }
 
@@ -274,13 +264,12 @@ class ActividadPartida : AppCompatActivity() {
     private fun obtenerIdDeUsuario(): String {
         // TODO-05-AUTHENTICATION
         // Obtener el uid del currentUser y retornarlo
-        return auth.currentUser?.uid ?: ""
+        return authentication.currentUser?.uid ?: ""
     }
 
     private fun obtenerReferenciaALaBaseDeDatos(): DatabaseReference {
         // TODO-06-DATABASE
         // Retornar una referencia a la instancia de la base de datos.
         return FirebaseDatabase.getInstance().reference
-
     }
 }
